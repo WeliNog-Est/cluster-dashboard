@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import math
 
 
 # STREAMLIT
@@ -17,7 +16,7 @@ st.markdown("### Análise de Concentração de Áreas por Cluster")
 @st.cache_data
 def carregar_dados():
     df = pd.read_excel(
-        "cluster_marcelina.xlsx",
+        r"C:\Users\wnsos\Documents\cluster_marcelina.xlsx",
         sheet_name="cluster_marcelina"
     )
 
@@ -284,4 +283,3 @@ with tab4:
         tabela_abs,
         use_container_width=True
     )
-
