@@ -239,49 +239,49 @@ with tab4:
 
     # ---------------- GRÁFICO (PERCENTUAL) ---------------- #
 
-st.markdown("### Percentual de Registros N/D dentro de cada Cluster")
+    st.markdown("### Percentual de Registros N/D dentro de cada Cluster")
 
-fig_nd, ax_nd = plt.subplots(figsize=(4, 2.5), dpi=150)  # 🔥 controla nitidez
+    fig_nd, ax_nd = plt.subplots(figsize=(4, 2.5), dpi=150)
 
-bars = ax_nd.bar(impacto_cluster_pct.index, impacto_cluster_pct.values)
+    bars = ax_nd.bar(impacto_cluster_pct.index, impacto_cluster_pct.values)
 
-ax_nd.set_ylabel("% N/D", fontsize=7)
-ax_nd.set_title("Impacto % N/D por Cluster", fontsize=8)
-ax_nd.set_ylim(0, impacto_cluster_pct.max() * 1.15)
+    ax_nd.set_ylabel("% N/D", fontsize=7)
+    ax_nd.set_title("Impacto % N/D por Cluster", fontsize=8)
+    ax_nd.set_ylim(0, impacto_cluster_pct.max() * 1.15)
 
-ax_nd.tick_params(axis='x', rotation=45, labelsize=6)
-ax_nd.tick_params(axis='y', labelsize=6)
+    ax_nd.tick_params(axis='x', rotation=45, labelsize=6)
+    ax_nd.tick_params(axis='y', labelsize=6)
 
-for bar in bars:
-    height = bar.get_height()
-    ax_nd.text(
-        bar.get_x() + bar.get_width() / 2,
-        height,
-        f"{height:.1f}%",
-        ha='center',
-        va='bottom',
-        fontsize=6
+    for bar in bars:
+        height = bar.get_height()
+        ax_nd.text(
+            bar.get_x() + bar.get_width() / 2,
+            height,
+            f"{height:.1f}%",
+            ha='center',
+            va='bottom',
+            fontsize=6
+        )
+
+    plt.tight_layout()
+    st.pyplot(fig_nd, use_container_width=False)
+
+    # ---------------- TABELA (VALORES ABSOLUTOS) ---------------- #
+
+    st.markdown("### Quantidade Absoluta de Registros N/D por Cluster")
+
+    tabela_abs = (
+        nd_por_cluster_qtd
+        .sort_values(ascending=False)
+        .reset_index()
+        .rename(columns={
+            "CLUSTER_GEOGRAFICO": "Cluster",
+            0: "Qtd Registros N/D"
+        })
     )
 
-plt.tight_layout()
+    st.dataframe(
+        tabela_abs,
+        use_container_width=True
+    )
 
-st.pyplot(fig_nd, use_container_width=False)
-
-# ---------------- TABELA (VALORES ABSOLUTOS) ---------------- #
-
-st.markdown("### Quantidade Absoluta de Registros N/D por Cluster")
-
-tabela_abs = (
-    nd_por_cluster_qtd
-    .sort_values(ascending=False)
-    .reset_index()
-    .rename(columns={
-        "CLUSTER_GEOGRAFICO": "Cluster",
-        0: "Qtd Registros N/D"
-    })
-)
-
-st.dataframe(
-    tabela_abs,
-    use_container_width=True
-)
