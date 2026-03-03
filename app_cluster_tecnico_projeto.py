@@ -2,11 +2,23 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import plotly.express as px
 
 
 # STREAMLIT
 
-st.set_page_config(layout="centered")
+st.set_page_config(
+    layout="wide",
+    page_title="Cluster Dashboard"
+)
+
+st.markdown("""
+    <style>
+        .stApp {
+            background-color: #FFFFFF;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
 st.markdown("### Análise de Concentração de Áreas por Cluster")
 
@@ -70,7 +82,7 @@ percentual_nd = round(100 * total_nd / total_registros, 2)
 
 # ---------------- MÉTRICAS ---------------- #
 
-st.markdown("## Resumo Executivo")
+st.markdown("### Resumo Executivo")
 
 col1, col2, col3, col4 = st.columns(4)
 
@@ -84,7 +96,7 @@ with col3:
     st.metric("Áreas com Distribuição", len(matriz_nao_100))
 
 with col4:
-    col4.metric("% Registros sem Área Técnica", f"{percentual_nd}%")
+    col4.metric("% NODES sem Área Técnica", f"{percentual_nd}%")
 
 
 # ---------------- ABAS ---------------- #
@@ -102,29 +114,48 @@ with tab1:
 
     st.markdown("### Heatmap")
 
-    fig, ax = plt.subplots(figsize=(4.5, 3.5))
+    import plotly.express as px
 
-    heatmap = sns.heatmap(
-        matriz_nao_100,
-        annot=True,
-        fmt=".1f",
-        cmap="YlOrRd",
-        linewidths=0.2,
-        cbar_kws={"label": "%"},
-        ax=ax,
-        annot_kws={"size": 5}
+    df_heat = matriz_nao_100.reset_index()
+
+    df_heat_long = df_heat.melt(
+        id_vars="AREA_TECNICA",
+        var_name="CLUSTER_GEOGRAFICO",
+        value_name="PERCENTUAL"
     )
 
-    cbar = heatmap.collections[0].colorbar
-    cbar.ax.tick_params(labelsize=4)
-    cbar.set_label("%", size=5)
+    fig = px.density_heatmap(
+        df_heat_long,
+        x="CLUSTER_GEOGRAFICO",
+        y="AREA_TECNICA",
+        z="PERCENTUAL",
+        color_continuous_scale="YlOrRd",
+        text_auto=".1f",
+        template="plotly_white"
+    )
 
-    ax.set_xlabel("Cluster Projeto SP", fontsize=7)
-    ax.set_ylabel("Área Técnica", fontsize=7)
-    ax.tick_params(axis='both', labelsize=6)
+    fig.update_layout(
+        height=440,
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+        font=dict(size=14),
+        xaxis_title="Cluster Projeto SP",
+        yaxis_title="Área Técnica",
+        xaxis=dict(tickfont=dict(size=13)),
+        yaxis=dict(tickfont=dict(size=13)),
+        coloraxis_colorbar=dict(
+            title="%",
+            tickfont=dict(size=12),
+            title_font=dict(size=13)
+        )
+    )
 
-    plt.tight_layout()
-    st.pyplot(fig)
+    fig.update_traces(
+        textfont=dict(size=13),
+        hovertemplate="Cluster: %{x}<br>Área: %{y}<br>%: %{z:.1f}<extra></extra>"
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
 
 
 # ---------------- ABA 2 - ÁREAS 100% ---------------- #
@@ -172,37 +203,76 @@ with tab3:
         default=matriz_pct.columns.tolist()
     )
 
-    cols = st.columns(3)
-    i = 0
+    if "area_selecionada" not in st.session_state:
+        st.session_state.area_selecionada = None
 
-    for cluster in clusters_selecionados:
+    cols_per_row = 3
+    clusters_lista = clusters_selecionados
 
-        data_cluster = matriz_nao_100[cluster]
-        data_cluster = data_cluster[data_cluster > 0].sort_index()
+    for row_start in range(0, len(clusters_lista), cols_per_row):
 
-        fig2, ax2 = plt.subplots(figsize=(6, 5))
-        bars = ax2.bar(data_cluster.index, data_cluster.values)
+        row_clusters = clusters_lista[row_start:row_start + cols_per_row]
+        cols = st.columns(cols_per_row)
 
-        ax2.set_ylim(0, 100)
-        ax2.set_title(cluster, fontsize=12)
-        ax2.tick_params(axis='x', rotation=90, labelsize=10)
-        ax2.tick_params(axis='y', labelsize=10)
+        for col, cluster in zip(cols, row_clusters):
 
-        for bar in bars:
-            height = bar.get_height()
-            ax2.text(
-                bar.get_x() + bar.get_width() / 2,
-                height + 1,
-                f"{height:.1f}%",
-                ha='center',
-                va='bottom',
-                fontsize=10
+            data_cluster = matriz_nao_100[cluster]
+            data_cluster = data_cluster[data_cluster > 0].sort_index()
+
+            df_plot = data_cluster.reset_index()
+            df_plot.columns = ["AREA_TECNICA", "PERCENTUAL"]
+
+            df_plot["COR"] = df_plot["AREA_TECNICA"].apply(
+                lambda x: "Selecionada"
+                if x == st.session_state.area_selecionada
+                else "Normal"
             )
 
-        plt.tight_layout()
+            fig = px.bar(
+                df_plot,
+                x="AREA_TECNICA",
+                y="PERCENTUAL",
+                color="COR",
+                text="PERCENTUAL",
+                color_discrete_map={
+                    "Selecionada": "#E4C767",
+                    "Normal": "#DA2319"
+                },
+                title=cluster,
+                template="plotly_white"
+            )
 
-        cols[i % 3].pyplot(fig2)
-        i += 1
+            fig.update_layout(
+                height=360,
+                template="plotly_white",
+                xaxis_title="Área Técnica",
+                yaxis_title=None,
+                yaxis=dict(range=[0, 100]),
+                xaxis_tickangle=-60,
+                margin=dict(l=30, r=10, t=40, b=60),
+                showlegend=False
+            )
+
+            fig.update_traces(
+                texttemplate='%{text:.1f}%',
+                textposition='outside',
+                textfont_size=10
+            )
+
+            selected = col.plotly_chart(
+                fig,
+                use_container_width=True,
+                on_select="rerun"
+            )
+
+            if selected and selected.get("points"):
+                area = selected["points"][0]["x"]
+                st.session_state.area_selecionada = area
+
+    if st.session_state.area_selecionada:
+        st.info(f"Área selecionada: {st.session_state.area_selecionada}")
+        if st.button("Limpar seleção"):
+            st.session_state.area_selecionada = None
 
 # ---------------- ABA 4 - IMPACTO N/D ---------------- #
 
@@ -217,60 +287,71 @@ with tab4:
     percentual_nd = round(100 * total_nd / total_registros, 2)
 
     col1, col2 = st.columns(2)
-
     col1.metric("Total Registros N/D", f"{total_nd:,}")
     col2.metric("Percentual sobre Base", f"{percentual_nd}%")
 
     # ---------------- PREPARAÇÃO DOS DADOS ---------------- #
 
-    nd_por_cluster_qtd = (
+    # Quantidade de registros N/D por cluster
+    nd_por_cluster = (
         df_nd
         .groupby("CLUSTER_GEOGRAFICO")
         .size()
     )
 
-    total_por_cluster = df.groupby("CLUSTER_GEOGRAFICO").size()
+    # Total de registros por cluster
+    total_por_cluster = (
+        df
+        .groupby("CLUSTER_GEOGRAFICO")
+        .size()
+    )
 
-    impacto_cluster_pct = round(
-        100 * nd_por_cluster_qtd / total_por_cluster,
-        2
-    ).sort_values(ascending=False)
+    # Percentual dentro de cada cluster
+    impacto_cluster_pct = (
+        100 * nd_por_cluster / total_por_cluster
+    ).fillna(0).round(2).sort_values(ascending=False)
 
     # ---------------- GRÁFICO (PERCENTUAL) ---------------- #
 
-    st.markdown("### Percentual de Registros N/D dentro de cada Cluster")
+    import plotly.express as px
 
-    fig_nd, ax_nd = plt.subplots(figsize=(4, 2.5), dpi=150)
+    st.markdown("### Percentual de Registros sem Área Técnica por Cluster")
 
-    bars = ax_nd.bar(impacto_cluster_pct.index, impacto_cluster_pct.values)
+    df_plot = impacto_cluster_pct.reset_index()
+    df_plot.columns = ["CLUSTER_GEOGRAFICO", "PERCENTUAL"]
 
-    ax_nd.set_ylabel("% N/D", fontsize=7)
-    ax_nd.set_title("Impacto % N/D por Cluster", fontsize=8)
-    ax_nd.set_ylim(0, impacto_cluster_pct.max() * 1.15)
+    fig_nd = px.bar(
+        df_plot,
+        x="CLUSTER_GEOGRAFICO",
+        y="PERCENTUAL",
+        text="PERCENTUAL"
+    )
 
-    ax_nd.tick_params(axis='x', rotation=45, labelsize=6)
-    ax_nd.tick_params(axis='y', labelsize=6)
+    fig_nd.update_traces(
+        marker_color="#DA2319",
+        texttemplate='%{text:.1f}%',
+        textposition='outside'
+    )
 
-    for bar in bars:
-        height = bar.get_height()
-        ax_nd.text(
-            bar.get_x() + bar.get_width() / 2,
-            height,
-            f"{height:.1f}%",
-            ha='center',
-            va='bottom',
-            fontsize=6
-        )
+    fig_nd.update_layout(
+        height=320,
+        template="plotly_white",
+        xaxis_title="Cluster",
+        yaxis_title=None,
+        yaxis=dict(range=[0, 100]),
+        xaxis_tickangle=-45,
+        showlegend=False
+    )
 
-    plt.tight_layout()
-    st.pyplot(fig_nd, use_container_width=False)
+    st.plotly_chart(fig_nd, use_container_width=True)
 
     # ---------------- TABELA (VALORES ABSOLUTOS) ---------------- #
 
-    st.markdown("### Quantidade Absoluta de Registros N/D por Cluster")
+    st.markdown(
+        "### Quantidade Absoluta de NODES sem Correspondência da Área Técnica")
 
     tabela_abs = (
-        nd_por_cluster_qtd
+        nd_por_cluster
         .sort_values(ascending=False)
         .reset_index()
         .rename(columns={
@@ -283,5 +364,3 @@ with tab4:
         tabela_abs,
         use_container_width=True
     )
-
-
