@@ -16,7 +16,7 @@ st.markdown("### Análise de Concentração de Áreas por Cluster")
 @st.cache_data
 def carregar_dados():
     df = pd.read_excel(
-        r"C:\Users\wnsos\Documents\cluster_marcelina.xlsx",
+        "cluster_marcelina.xlsx",
         sheet_name="cluster_marcelina"
     )
 
@@ -283,3 +283,4 @@ with tab4:
         tabela_abs,
         use_container_width=True
     )
+
