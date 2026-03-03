@@ -180,13 +180,13 @@ with tab3:
         data_cluster = matriz_nao_100[cluster]
         data_cluster = data_cluster[data_cluster > 0].sort_index()
 
-        fig2, ax2 = plt.subplots(figsize=(5, 4))
+        fig2, ax2 = plt.subplots(figsize=(6, 5))
         bars = ax2.bar(data_cluster.index, data_cluster.values)
 
         ax2.set_ylim(0, 100)
-        ax2.set_title(cluster, fontsize=11)
-        ax2.tick_params(axis='x', rotation=90, labelsize=8)
-        ax2.tick_params(axis='y', labelsize=8)
+        ax2.set_title(cluster, fontsize=12)
+        ax2.tick_params(axis='x', rotation=90, labelsize=10)
+        ax2.tick_params(axis='y', labelsize=10)
 
         for bar in bars:
             height = bar.get_height()
@@ -196,7 +196,7 @@ with tab3:
                 f"{height:.1f}%",
                 ha='center',
                 va='bottom',
-                fontsize=8
+                fontsize=10
             )
 
         plt.tight_layout()
@@ -283,4 +283,5 @@ with tab4:
         tabela_abs,
         use_container_width=True
     )
+
 
