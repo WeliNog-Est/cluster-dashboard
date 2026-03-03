@@ -14,8 +14,19 @@ st.set_page_config(
 
 st.markdown("""
     <style>
+        :root {
+            --background-color: #FFFFFF;
+            --secondary-background-color: #F8F9FA;
+            --text-color: #2B2B2B;
+        }
+
         .stApp {
-            background-color: #FFFFFF;
+            background-color: #FFFFFF !important;
+        }
+
+        html, body {
+            background-color: #FFFFFF !important;
+            color: #2B2B2B !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -27,14 +38,26 @@ st.markdown("### Análise de Concentração de Áreas por Cluster")
 
 @st.cache_data
 def carregar_dados():
-    df = pd.read_excel(
-        "cluster_marcelina.xlsx",
-        sheet_name="cluster_marcelina"
+
+    df = pd.read_csv(
+        "cluster_marcelina_limpo.csv",
+        sep=";",
+        encoding="utf-8-sig"
     )
 
-    df.columns = df.columns.str.strip().str.upper()
+    # Padronizar nomes das colunas
+    df.columns = (
+        df.columns
+        .str.strip()
+        .str.upper()
+        .str.replace(" ", "_")
+    )
 
-    df["HP_TECNICA"] = pd.to_numeric(df["HP_TECNICA"], errors="coerce")
+    df["HP_TECNICA"] = (
+        pd.to_numeric(df["HP_TECNICA"], errors="coerce")
+        .fillna(0)
+        .astype(int)
+    )
 
     # ---------------- IDENTIFICAR N/D ---------------- #
 
@@ -62,7 +85,8 @@ def carregar_dados():
     )
 
     matriz_pct = matriz.div(matriz.sum(axis=1), axis=0) * 100
-    matriz_pct = matriz_pct.fillna(0).round(1)
+    matriz_pct = matriz_pct.fillna(0)
+    matriz_pct = matriz_pct.round(1)
 
     return df, df_valid, df_nd, matriz, matriz_pct
 
@@ -364,3 +388,5 @@ with tab4:
         tabela_abs,
         use_container_width=True
     )
+
+
