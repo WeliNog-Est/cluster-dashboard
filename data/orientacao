@@ -1,0 +1,4 @@
+Primeiramente foram analisadas as duas bases (Area de Negocio e Area Tecnica).
+Foi usado o COD_IBGE da area de negocio para incluir na base da Area Tecnica;
+Foi criada uma nova variavel chave que concatenou COD_NODE com COD_IBGE;
+A variavel chave foi usada para fazer o join, acrescentando a coluna da Area Tecnica na base de Area de Negocio.
