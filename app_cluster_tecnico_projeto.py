@@ -175,7 +175,7 @@ with col4:
 # ---------------- ABAS ---------------- #
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "Heatmap",
-    "Heatmap SP (Cluster Analítico)",
+    "Heatmap Cluster SP)",
     "Áreas 100%",
     "Análise por Cluster",
     "NODES Não Encontrados"
@@ -523,6 +523,7 @@ with tab5:
         tabela_abs,
         use_container_width=True
     )
+
 
 
 
