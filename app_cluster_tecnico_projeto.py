@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -186,12 +187,12 @@ with tab1:
 
     df_heat = matriz_nao_100.reset_index()
     df_heat_long = df_heat.melt(
-        id_vars=df_heat.columns[0],  
+        id_vars=df_heat.columns[0],  # AREA_TECNICA ou AREA_BASE dependendo do pivot
         var_name="CLUSTER_GEOGRAFICO",
         value_name="PERCENTUAL"
     )
 
-    eixo_y = df_heat.columns[0]  
+    eixo_y = df_heat.columns[0]  # nome dinâmico do eixo Y
 
     fig = px.density_heatmap(
         df_heat_long,
@@ -226,7 +227,7 @@ with tab1:
 
     st.plotly_chart(fig, use_container_width=True)
 
-# ---------------- ABA 2 - HEATMAP SP ---------------- #
+# ---------------- ABA 2 - HEATMAP SP (CLUSTER ANALÍTICO) ---------------- #
 with tab2:
     st.markdown("### Áreas NÃO 100% em SP • Distribuição dentro de SP por CLUSTER_ANALITICO")
 
@@ -485,6 +486,44 @@ with tab5:
         df_plot,
         x="CLUSTER_GEOGRAFICO",
         y="PERCENTUAL",
+        text="PERCENTUAL"
+    )
+
+    fig_nd.update_traces(
+        marker_color="#DA2319",
+        texttemplate='%{text:.1f}%',
+        textposition='outside'
+    )
+
+    fig_nd.update_layout(
+        height=320,
+        template="plotly_white",
+        xaxis_title="Cluster",
+        yaxis_title=None,
+        yaxis=dict(range=[0, 100]),
+        xaxis_tickangle=-45,
+        showlegend=False
+    )
+
+    st.plotly_chart(fig_nd, use_container_width=True)
+
+    # Tabela (valores absolutos)
+    st.markdown("### Quantidade Absoluta de NODES sem Correspondência da Área Técnica")
+
+    tabela_abs = (
+        nd_por_cluster
+        .sort_values(ascending=False)
+        .reset_index()
+        .rename(columns={
+            "CLUSTER_GEOGRAFICO": "Cluster",
+            0: "Qtd Registros N/D"
+        })
+    )
+
+    st.dataframe(
+        tabela_abs,
+        use_container_width=True
+    )
 
 
 
