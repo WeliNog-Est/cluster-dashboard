@@ -229,7 +229,7 @@ with tab1:
 
 # ---------------- ABA 2 - HEATMAP SP (CLUSTER ANALÍTICO) ---------------- #
 with tab2:
-    st.markdown("### Áreas NÃO 100% em SP • Distribuição dentro de SP por CLUSTER_ANALITICO")
+    st.markdown("### Heatmap Cluster SP")
 
     # Preparação a partir de df_valid (já tem CLUSTER_ANALITICO criado)
     df_aux = df_valid.copy()
@@ -311,7 +311,7 @@ with tab2:
                 paper_bgcolor="white",
                 plot_bgcolor="white",
                 font=dict(size=14),
-                xaxis_title="Cluster Analítico (recorte: SP)",
+                xaxis_title="Cluster Projeto SP (recorte: SP)",
                 yaxis_title="Área Técnica",
                 xaxis=dict(tickfont=dict(size=13)),
                 yaxis=dict(tickfont=dict(size=13)),
@@ -320,13 +320,12 @@ with tab2:
                     tickfont=dict(size=12),
                     title_font=dict(size=13)
                 ),
-                margin=dict(l=10, r=10, t=40, b=10),
-                title="Heatmap – Áreas NÃO 100% em SP (Distribuição por Cluster Analítico)"
+                margin=dict(l=10, r=10, t=40, b=10)
             )
 
             fig_sp.update_traces(
                 textfont=dict(size=12),
-                hovertemplate="Cluster Analítico: %{x}<br>Área: %{y}<br>% em SP: %{z:.1f}<extra></extra>"
+                hovertemplate="Cluster Projeto SP: %{x}<br>Área: %{y}<br>% em SP: %{z:.1f}<extra></extra>"
             )
 
             st.plotly_chart(fig_sp, use_container_width=True)
@@ -524,6 +523,7 @@ with tab5:
         tabela_abs,
         use_container_width=True
     )
+
 
 
 
