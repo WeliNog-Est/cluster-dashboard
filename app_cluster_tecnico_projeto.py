@@ -75,7 +75,7 @@ def cluster_sp_area(row):
         return cg
 
 
-# ---------------- CARREGAR DADOS ---------------- #
+# ---------------- CARREGAR OS DADOS ---------------- #
 
 @st.cache_data
 def carregar_dados():
@@ -115,7 +115,6 @@ def carregar_dados():
 
     df_valid["CLUSTER_ANALITICO"] = df_valid.apply(cluster_sp_area, axis=1)
 
-    # MATRIZ
     matriz = df_valid.pivot_table(
         index="AREA_TECNICA",
         columns="CLUSTER_GEOGRAFICO",
@@ -128,7 +127,7 @@ def carregar_dados():
     matriz_pct = matriz_pct.fillna(0)
     matriz_pct = matriz_pct.round(1)
 
-    # ---------------- BASE BAIRROS ---------------- #
+    # ---------------- BASE DE BAIRROS ---------------- #
 
     df_cluster_ab1 = pd.read_excel(
         "cluster_pc_ab1.xlsx",
@@ -215,7 +214,7 @@ with col4:
 tab1, tab2, tab3, tab4 = st.tabs([
     "Heatmap",
     "Heatmap (Cluster SP)",
-    "Áreas 100%",
+    "Áreas 100% em um Cluster",
     "Análise por Cluster"
 ])
 
@@ -259,9 +258,28 @@ with tab2:
 
     st.markdown("### Heatmap Cluster SP")
 
-    df_sp = df_valid[df_valid["CLUSTER_GEOGRAFICO"] == "SP"]
+    df_aux = df_valid.copy()
 
-    matriz_sp = df_sp.pivot_table(
+    matriz_geo = df_aux.pivot_table(
+        index="AREA_TECNICA",
+        columns="CLUSTER_GEOGRAFICO",
+        values="HP_TECNICA",
+        aggfunc="sum",
+        fill_value=0
+    )
+
+    matriz_geo_pct = (matriz_geo.div(matriz_geo.sum(axis=1), axis=0) * 100).fillna(0)
+
+    areas_nao_integrais_em_SP = matriz_geo_pct.index[
+        (matriz_geo_pct["SP"] > 0) & (matriz_geo_pct["SP"] < 100)
+    ]
+
+    df_sp = df_aux.loc[
+        df_aux["AREA_TECNICA"].isin(areas_nao_integrais_em_SP) &
+        (df_aux["CLUSTER_GEOGRAFICO"] == "SP")
+    ].copy()
+
+    matriz_sp_analitico = df_sp.pivot_table(
         index="AREA_TECNICA",
         columns="CLUSTER_ANALITICO",
         values="HP_TECNICA",
@@ -269,12 +287,12 @@ with tab2:
         fill_value=0
     )
 
-    matriz_sp_pct = (
-        matriz_sp.div(matriz_sp.sum(axis=1), axis=0) * 100
+    matriz_sp_analitico_pct = (
+        matriz_sp_analitico.div(matriz_sp_analitico.sum(axis=1), axis=0) * 100
     ).fillna(0).round(1)
 
     df_heat_sp = (
-        matriz_sp_pct
+        matriz_sp_analitico_pct
         .reset_index()
         .melt(
             id_vars="AREA_TECNICA",
@@ -309,64 +327,3 @@ with tab2:
         tabela_view,
         use_container_width=True
     )
-
-
-# ---------------- ABA 3 ---------------- #
-
-with tab3:
-
-    st.markdown("### Áreas 100% Concentradas")
-
-    areas_100_long = (
-        matriz_100
-        .stack()
-        .reset_index()
-    )
-
-    areas_100_long.columns = ["AREA_TECNICA", "CLUSTER_GEOGRAFICO", "PERCENTUAL"]
-
-    areas_100_long = areas_100_long[areas_100_long["PERCENTUAL"] == 100]
-
-    hp_total_area = matriz.sum(axis=1)
-
-    areas_100_long["HP_TOTAL"] = areas_100_long["AREA_TECNICA"].map(hp_total_area)
-
-    areas_100_long = areas_100_long[
-        ["CLUSTER_GEOGRAFICO", "AREA_TECNICA", "HP_TOTAL"]
-    ]
-
-    st.dataframe(
-        areas_100_long,
-        use_container_width=True
-    )
-
-
-# ---------------- ABA 4 ---------------- #
-
-with tab4:
-
-    st.markdown("### Distribuição por Cluster")
-
-    for cluster in matriz_nao_100.columns:
-
-        data_cluster = matriz_nao_100[cluster]
-        data_cluster = data_cluster[data_cluster > 0].sort_index()
-
-        df_plot = data_cluster.reset_index()
-        df_plot.columns = ["AREA_TECNICA", "PERCENTUAL"]
-
-        fig = px.bar(
-            df_plot,
-            x="AREA_TECNICA",
-            y="PERCENTUAL",
-            text="PERCENTUAL",
-            title=cluster,
-            template="plotly_white"
-        )
-
-        fig.update_layout(
-            height=350,
-            yaxis=dict(range=[0, 100])
-        )
-
-        st.plotly_chart(fig, use_container_width=True)
