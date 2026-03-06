@@ -34,6 +34,7 @@ st.markdown("### Análise de Concentração de Áreas por Cluster")
 
 # ---------------- FUNÇÕES AUXILIARES ---------------- #
 
+
 def strip_upper(x: str) -> str:
     if pd.isna(x):
         return ""
@@ -125,7 +126,7 @@ def carregar_dados():
 
     matriz_pct = matriz.div(matriz.sum(axis=1), axis=0) * 100
     matriz_pct = matriz_pct.fillna(0)
-    matriz_pct = matriz_pct.round(0)
+    matriz_pct = matriz_pct.round(1)
 
     # ---------------- BASE DE BAIRROS ---------------- #
 
@@ -269,7 +270,8 @@ with tab2:
         fill_value=0
     )
 
-    matriz_geo_pct = (matriz_geo.div(matriz_geo.sum(axis=1), axis=0) * 100).fillna(0)
+    matriz_geo_pct = (matriz_geo.div(
+        matriz_geo.sum(axis=1), axis=0) * 100).fillna(0)
 
     areas_nao_integrais_em_SP = matriz_geo_pct.index[
         (matriz_geo_pct["SP"] > 0) & (matriz_geo_pct["SP"] < 100)
@@ -457,7 +459,7 @@ with tab4:
 
         if st.button("Limpar seleção"):
             st.session_state.area_selecionada = None
-            
+
 # ---------------- ABA 5 - IMPACTO N/D ---------------- #
 
 with tab5:
