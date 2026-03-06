@@ -315,15 +315,232 @@ with tab2:
 
     st.plotly_chart(fig_sp, use_container_width=True)
 
-    st.markdown("### Bairros da Área 14 divididos entre SP (AREA 1) e SP (AREA 2)")
+    st.markdown("### Subclusters da Área 14 e % de Classe AB1")
 
     tabela_view = tabela_bairros.copy()
 
+    # converter percentual
     tabela_view["PC_CLASSE_AB1"] = (
         tabela_view["PC_CLASSE_AB1"] * 100
     ).round(1).astype(str) + "%"
+
+    # renomear colunas
+    tabela_view = tabela_view.rename(columns={
+        "CLUSTER_ANALITICO": "CLUSTER",
+        "CIDADE_SUB_CLUSTER": "SUBCLUSTER",
+        "HP_TOTAL": "HP",
+        "PC_CLASSE_AB1": "% CLASSE AB1"
+    })
 
     st.dataframe(
         tabela_view,
         use_container_width=True
     )
+
+# ---------------- ABA 3 - ÁREAS 100% ---------------- #
+
+with tab3:
+
+    st.markdown("### Áreas 100% Concentradas")
+
+    areas_100_long = (
+        matriz_100
+        .stack()
+        .reset_index()
+    )
+
+    areas_100_long.columns = ["AREA_TECNICA",
+                              "CLUSTER_GEOGRAFICO", "PERCENTUAL"]
+
+    areas_100_long = areas_100_long[areas_100_long["PERCENTUAL"] == 100]
+
+    hp_total_area = matriz.sum(axis=1)
+
+    areas_100_long["HP_TOTAL"] = areas_100_long["AREA_TECNICA"].map(
+        hp_total_area
+    )
+
+    areas_100_long = areas_100_long[
+        ["CLUSTER_GEOGRAFICO", "AREA_TECNICA", "HP_TOTAL"]
+    ].sort_values(
+        ["CLUSTER_GEOGRAFICO", "HP_TOTAL"],
+        ascending=[True, False]
+    )
+
+    st.dataframe(
+        areas_100_long.reset_index(drop=True),
+        use_container_width=True
+    )
+
+
+# ---------------- ABA 4 - ANÁLISE POR CLUSTER ---------------- #
+
+with tab4:
+
+    st.markdown("### Distribuição por Cluster")
+
+    clusters_selecionados = st.multiselect(
+        "Selecione os Clusters",
+        matriz_pct.columns,
+        default=matriz_pct.columns.tolist()
+    )
+
+    if "area_selecionada" not in st.session_state:
+        st.session_state.area_selecionada = None
+
+    cols_per_row = 3
+    clusters_lista = clusters_selecionados
+
+    for row_start in range(0, len(clusters_lista), cols_per_row):
+
+        row_clusters = clusters_lista[row_start:row_start + cols_per_row]
+        cols = st.columns(cols_per_row)
+
+        for col, cluster in zip(cols, row_clusters):
+
+            data_cluster = matriz_nao_100[cluster]
+            data_cluster = data_cluster[data_cluster > 0].sort_index()
+
+            df_plot = data_cluster.reset_index()
+            df_plot.columns = ["AREA_TECNICA", "PERCENTUAL"]
+
+            df_plot["COR"] = df_plot["AREA_TECNICA"].apply(
+                lambda x: "Selecionada"
+                if x == st.session_state.area_selecionada
+                else "Normal"
+            )
+
+            fig = px.bar(
+                df_plot,
+                x="AREA_TECNICA",
+                y="PERCENTUAL",
+                color="COR",
+                text="PERCENTUAL",
+                color_discrete_map={
+                    "Selecionada": "#E4C767",
+                    "Normal": "#DA2319"
+                },
+                title=cluster,
+                template="plotly_white"
+            )
+
+            fig.update_layout(
+                height=360,
+                template="plotly_white",
+                xaxis_title="Área Técnica",
+                yaxis_title=None,
+                yaxis=dict(range=[0, 100]),
+                xaxis_tickangle=-60,
+                margin=dict(l=30, r=10, t=40, b=60),
+                showlegend=False
+            )
+
+            fig.update_traces(
+                texttemplate='%{text:.1f}%',
+                textposition='outside',
+                textfont_size=10
+            )
+
+            selected = col.plotly_chart(
+                fig,
+                use_container_width=True,
+                on_select="rerun"
+            )
+
+            if selected and selected.get("points"):
+                area = selected["points"][0]["x"]
+                st.session_state.area_selecionada = area
+
+    if st.session_state.area_selecionada:
+        st.info(f"Área selecionada: {st.session_state.area_selecionada}")
+
+        if st.button("Limpar seleção"):
+            st.session_state.area_selecionada = None
+            
+# ---------------- ABA 5 - IMPACTO N/D ---------------- #
+
+with tab5:
+
+    st.markdown("### Análise dos Registros sem Área Técnica")
+
+    # ---------------- KPI ---------------- #
+
+    total_registros = len(df)
+    total_nd = len(df_nd)
+    percentual_nd = round(100 * total_nd / total_registros, 2)
+
+    col1, col2 = st.columns(2)
+    col1.metric("Total Registros N/D", f"{total_nd:,}")
+    col2.metric("Percentual sobre Base", f"{percentual_nd}%")
+
+    # ---------------- PREPARAÇÃO DOS DADOS ---------------- #
+
+    nd_por_cluster = (
+        df_nd
+        .groupby("CLUSTER_GEOGRAFICO")
+        .size()
+    )
+
+    total_por_cluster = (
+        df
+        .groupby("CLUSTER_GEOGRAFICO")
+        .size()
+    )
+
+    impacto_cluster_pct = (
+        100 * nd_por_cluster / total_por_cluster
+    ).fillna(0).round(2).sort_values(ascending=False)
+
+    # ---------------- GRÁFICO ---------------- #
+
+    st.markdown("### Percentual de Registros sem Área Técnica por Cluster")
+
+    df_plot = impacto_cluster_pct.reset_index()
+    df_plot.columns = ["CLUSTER_GEOGRAFICO", "PERCENTUAL"]
+
+    fig_nd = px.bar(
+        df_plot,
+        x="CLUSTER_GEOGRAFICO",
+        y="PERCENTUAL",
+        text="PERCENTUAL"
+    )
+
+    fig_nd.update_traces(
+        marker_color="#DA2319",
+        texttemplate='%{text:.1f}%',
+        textposition='outside'
+    )
+
+    fig_nd.update_layout(
+        height=320,
+        template="plotly_white",
+        xaxis_title="Cluster",
+        yaxis_title=None,
+        yaxis=dict(range=[0, 100]),
+        xaxis_tickangle=-45,
+        showlegend=False
+    )
+
+    st.plotly_chart(fig_nd, use_container_width=True)
+
+    # ---------------- TABELA ---------------- #
+
+    st.markdown(
+        "### Quantidade Absoluta de NODES sem Correspondência da Área Técnica"
+    )
+
+    tabela_abs = (
+        nd_por_cluster
+        .sort_values(ascending=False)
+        .reset_index()
+        .rename(columns={
+            "CLUSTER_GEOGRAFICO": "Cluster",
+            0: "Qtd Registros N/D"
+        })
+    )
+
+    st.dataframe(
+        tabela_abs,
+        use_container_width=True
+    )
+
