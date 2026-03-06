@@ -125,7 +125,7 @@ def carregar_dados():
 
     matriz_pct = matriz.div(matriz.sum(axis=1), axis=0) * 100
     matriz_pct = matriz_pct.fillna(0)
-    matriz_pct = matriz_pct.round(1)
+    matriz_pct = matriz_pct.round(0)
 
     # ---------------- BASE DE BAIRROS ---------------- #
 
@@ -544,5 +544,6 @@ with tab5:
         tabela_abs,
         use_container_width=True
     )
+
 
 
