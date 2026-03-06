@@ -71,10 +71,9 @@ def carregar_dados():
 
     # ---------------- Bairros / AB1 ---------------- #
 
-    df_cluster_ab1 = pd.read_csv(
-        "cluster_pc_ab1.csv",
-        sep=";",
-        encoding="utf-8-sig"
+    df_cluster_ab1 = pd.read_excel(
+    "cluster_pc_ab1.xlsx",
+    sheet_name="cluster_ab1"
     )
 
     df_cluster_ab1["PC_CLASSE_AB1"] = (
@@ -339,3 +338,4 @@ with tab5:
     )
 
     st.plotly_chart(fig, use_container_width=True)
+
