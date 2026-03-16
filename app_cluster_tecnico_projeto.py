@@ -215,37 +215,7 @@ with tab2:
 
     st.markdown("### Heatmap Cluster SP")
 
-    df_aux = df.copy()
-
-    matriz_geo = df_aux.pivot_table(
-        index="AREA_TECNICA",
-        columns="CLUSTER_GEOGRAFICO",
-        values="HP_TECNICA",
-        aggfunc="sum",
-        fill_value=0
-    )
-
-    matriz_geo_pct = (
-        matriz_geo.div(matriz_geo.sum(axis=1), axis=0) * 100
-    ).fillna(0)
-
-    if "SP" not in matriz_geo_pct.columns:
-        st.error("Cluster SP não encontrado na base.")
-        st.stop()
-
-    areas_nao_integrais_em_SP = matriz_geo_pct.index[
-        (matriz_geo_pct["SP"] > 0) &
-        (matriz_geo_pct["SP"] < 100)
-    ]
-
-    if len(areas_nao_integrais_em_SP) == 0:
-        st.warning("Nenhuma área possui distribuição parcial em SP.")
-        st.stop()
-
-    df_sp = df_aux.loc[
-        df_aux["AREA_TECNICA"].isin(areas_nao_integrais_em_SP) &
-        (df_aux["CLUSTER_GEOGRAFICO"] == "SP")
-    ].copy()
+    df_sp = df[df["CLUSTER_GEOGRAFICO"] == "SP"].copy()
 
     matriz_sp_analitico = df_sp.pivot_table(
         index="AREA_TECNICA",
@@ -288,13 +258,11 @@ with tab2:
 
     st.markdown("### Subclusters da Área 14 e % de Classe AB1")
 
-    if tabela_bairros.empty:
+    tabela_view = tabela_bairros.copy()
 
+    if tabela_view.empty:
         st.warning("Nenhum registro encontrado para Área 14.")
-
     else:
-
-        tabela_view = tabela_bairros.copy()
 
         tabela_view["PC_CLASSE_AB1"] = (
             tabela_view["PC_CLASSE_AB1"] * 100
