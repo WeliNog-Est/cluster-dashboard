@@ -81,11 +81,7 @@ def cluster_sp_area(row):
 @st.cache_data
 def carregar_dados():
 
-    df = pd.read_csv(
-        "cluster_marcelina_limpo.csv",
-        sep=";",
-        encoding="utf-8-sig"
-    )
+    df = pd.read_excel("data/cluster_node_fev.xlsx", sheet_name="cluster")
 
     df.columns = (
         df.columns
