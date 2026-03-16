@@ -213,8 +213,14 @@ with tab2:
 
     st.markdown("### Heatmap Cluster SP")
 
-    df_sp = df[df["CLUSTER_GEOGRAFICO"] == "SP"].copy()
+    areas_filtradas = matriz_nao_100.index
 
+    df_sp = df[
+        (df["CLUSTER_GEOGRAFICO"] == "SP") &
+        (df["AREA_TECNICA"].isin(areas_filtradas))
+    ].copy()
+
+    # criar matriz analítica
     matriz_sp_analitico = df_sp.pivot_table(
         index="AREA_TECNICA",
         columns="CLUSTER_ANALITICO",
@@ -230,6 +236,7 @@ with tab2:
         ) * 100
     ).fillna(0).round(1)
 
+    # formatar para heatmap
     df_heat_sp = (
         matriz_sp_analitico_pct
         .reset_index()
@@ -250,9 +257,15 @@ with tab2:
         template="plotly_white"
     )
 
-    fig_sp.update_layout(height=500)
+    fig_sp.update_layout(
+        height=500,
+        paper_bgcolor="white",
+        plot_bgcolor="white"
+    )
 
     st.plotly_chart(fig_sp, use_container_width=True)
+
+    # ---------------- TABELA AREA 14 ---------------- #
 
     st.markdown("### Subclusters da Área 14 e % de Classe AB1")
 
@@ -260,6 +273,7 @@ with tab2:
 
     if tabela_view.empty:
         st.warning("Nenhum registro encontrado para Área 14.")
+
     else:
 
         tabela_view["PC_CLASSE_AB1"] = (
