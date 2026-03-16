@@ -50,9 +50,9 @@ def cluster_sp_area(row):
 @st.cache_data
 def carregar_dados():
 
-    path_cluster = os.path.join(BASE_DIR,"data","cluster_node_fev.xlsx")
-    path_tec = os.path.join(BASE_DIR,"data","base_qualinet.xlsx")
-    path_ab1 = os.path.join(BASE_DIR,"data","cluster_pc_ab1.xlsx")
+    path_cluster = os.path.join(BASE_DIR,"cluster_node_fev.xlsx")
+    path_tec = os.path.join(BASE_DIR,"base_qualinet.xlsx")
+    path_ab1 = os.path.join(BASE_DIR,"cluster_pc_ab1.xlsx")
 
     # Base principal
     df = pd.read_excel(path_cluster, sheet_name="cluster")
