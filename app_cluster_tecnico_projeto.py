@@ -109,8 +109,6 @@ def carregar_dados():
         .astype(int)
     )
 
-    df["CLUSTER_ANALITICO"] = df.apply(cluster_sp_area, axis=1)
-
     matriz = df.pivot_table(
         index="AREA_TECNICA",
         columns="CLUSTER_GEOGRAFICO",
