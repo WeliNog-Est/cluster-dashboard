@@ -1,11 +1,12 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 import plotly.express as px
 import unicodedata
 
-# STREAMLIT
+# ---------------------------------------------------
+# CONFIGURAÇÃO STREAMLIT
+# ---------------------------------------------------
+
 st.set_page_config(
     layout="wide",
     page_title="Cluster Dashboard"
@@ -32,20 +33,14 @@ st.markdown("""
 
 st.markdown("### Análise de Concentração de Áreas por Cluster")
 
-# ---------------- FUNÇÕES AUXILIARES ---------------- #
+# ---------------------------------------------------
+# FUNÇÕES AUXILIARES
+# ---------------------------------------------------
 
-
-def strip_upper(x: str) -> str:
+def normalize_ascii(x):
     if pd.isna(x):
         return ""
-    return str(x).strip().upper()
-
-
-def normalize_ascii(x: str) -> str:
-    if pd.isna(x):
-        return ""
-    x = str(x)
-    x = unicodedata.normalize("NFD", x)
+    x = unicodedata.normalize("NFD", str(x))
     x = "".join(ch for ch in x if unicodedata.category(ch) != "Mn")
     return x.upper().strip()
 
@@ -76,11 +71,13 @@ def cluster_sp_area(row):
     return cg
 
 
-# ---------------- CARREGAR OS DADOS ---------------- #
+# ---------------------------------------------------
+# CARREGAR BASE
+# ---------------------------------------------------
 
 @st.cache_data
 def carregar_dados():
-    
+
     df = pd.read_csv(
         "clusterizacao_streamlit.csv",
         sep=";",
@@ -94,8 +91,15 @@ def carregar_dados():
         .str.replace(" ", "_")
     )
 
+    df["CLUSTER_GEOGRAFICO"] = (
+        df["CLUSTER_GEOGRAFICO"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+    )
+
     df["HP_TECNICA"] = (
-        pd.to_numeric(df.get("HP_TECNICA", 0), errors="coerce")
+        pd.to_numeric(df["HP_TECNICA"], errors="coerce")
         .fillna(0)
         .astype(int)
     )
@@ -110,11 +114,11 @@ def carregar_dados():
         fill_value=0
     )
 
-    matriz_pct = matriz.div(matriz.sum(axis=1), axis=0) * 100
-    matriz_pct = matriz_pct.fillna(0)
-    matriz_pct = matriz_pct.round(1)
+    matriz_pct = (
+        matriz.div(matriz.sum(axis=1), axis=0) * 100
+    ).fillna(0).round(1)
 
-    # ---------------- AREA 14 ---------------- #
+    # Área 14
 
     df_area14 = df[
         (df["AREA_TECNICA"] == "AREA 14") &
@@ -129,11 +133,10 @@ def carregar_dados():
             PC_CLASSE_AB1=("PC_CLASSE_AB1", "mean")
         )
         .reset_index()
-    )
-
-    tabela_bairros = tabela_bairros.sort_values(
-        ["CLUSTER_ANALITICO", "HP_TOTAL"],
-        ascending=[True, False]
+        .sort_values(
+            ["CLUSTER_ANALITICO", "HP_TOTAL"],
+            ascending=[True, False]
+        )
     )
 
     return df, matriz, matriz_pct, tabela_bairros
@@ -141,7 +144,9 @@ def carregar_dados():
 
 df, matriz, matriz_pct, tabela_bairros = carregar_dados()
 
-# ---------------- MÉTRICAS ---------------- #
+# ---------------------------------------------------
+# MÉTRICAS
+# ---------------------------------------------------
 
 max_por_area = matriz_pct.max(axis=1)
 
@@ -152,17 +157,13 @@ st.markdown("### Resumo Executivo")
 
 col1, col2, col3 = st.columns(3)
 
-with col1:
-    st.metric("Total de Áreas", len(matriz_pct))
+col1.metric("Total de Áreas", len(matriz_pct))
+col2.metric("Áreas 100% Concentradas", len(matriz_100))
+col3.metric("Áreas com Distribuição", len(matriz_nao_100))
 
-with col2:
-    st.metric("Áreas 100% Concentradas", len(matriz_100))
-
-with col3:
-    st.metric("Áreas com Distribuição", len(matriz_nao_100))
-
-
-# ---------------- ABAS ---------------- #
+# ---------------------------------------------------
+# ABAS
+# ---------------------------------------------------
 
 tab1, tab2, tab3, tab4 = st.tabs([
     "Heatmap",
@@ -171,8 +172,9 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "Análise por Cluster"
 ])
 
-
-# ---------------- ABA 1 ---------------- #
+# ---------------------------------------------------
+# HEATMAP GERAL
+# ---------------------------------------------------
 
 with tab1:
 
@@ -200,16 +202,15 @@ with tab1:
 
     st.plotly_chart(fig, use_container_width=True)
 
-
-# ---------------- ABA 2 ---------------- #
+# ---------------------------------------------------
+# HEATMAP SP
+# ---------------------------------------------------
 
 with tab2:
 
     st.markdown("### Heatmap Cluster SP")
 
     df_aux = df.copy()
-
-    # ---------------- MATRIZ GERAL ---------------- #
 
     matriz_geo = df_aux.pivot_table(
         index="AREA_TECNICA",
@@ -223,21 +224,23 @@ with tab2:
         matriz_geo.div(matriz_geo.sum(axis=1), axis=0) * 100
     ).fillna(0)
 
-    # ---------------- ÁREAS NÃO INTEGRAIS EM SP ---------------- #
+    if "SP" not in matriz_geo_pct.columns:
+        st.error("Cluster SP não encontrado na base.")
+        st.stop()
 
     areas_nao_integrais_em_SP = matriz_geo_pct.index[
         (matriz_geo_pct["SP"] > 0) &
         (matriz_geo_pct["SP"] < 100)
     ]
 
-    # ---------------- FILTRAR APENAS SP ---------------- #
+    if len(areas_nao_integrais_em_SP) == 0:
+        st.warning("Nenhuma área possui distribuição parcial em SP.")
+        st.stop()
 
     df_sp = df_aux.loc[
         df_aux["AREA_TECNICA"].isin(areas_nao_integrais_em_SP) &
         (df_aux["CLUSTER_GEOGRAFICO"] == "SP")
     ].copy()
-
-    # ---------------- MATRIZ ANALÍTICA ---------------- #
 
     matriz_sp_analitico = df_sp.pivot_table(
         index="AREA_TECNICA",
@@ -253,8 +256,6 @@ with tab2:
             axis=0
         ) * 100
     ).fillna(0).round(1)
-
-    # ---------------- FORMATAR PARA HEATMAP ---------------- #
 
     df_heat_sp = (
         matriz_sp_analitico_pct
@@ -276,37 +277,39 @@ with tab2:
         template="plotly_white"
     )
 
-    fig_sp.update_layout(
-        height=500,
-        paper_bgcolor="white",
-        plot_bgcolor="white"
-    )
+    fig_sp.update_layout(height=500)
 
     st.plotly_chart(fig_sp, use_container_width=True)
 
-    # ---------------- TABELA AREA 14 ---------------- #
-
     st.markdown("### Subclusters da Área 14 e % de Classe AB1")
 
-    tabela_view = tabela_bairros.copy()
+    if tabela_bairros.empty:
 
-    tabela_view["PC_CLASSE_AB1"] = (
-        tabela_view["PC_CLASSE_AB1"] * 100
-    ).round(1).astype(str) + "%"
+        st.warning("Nenhum registro encontrado para Área 14.")
 
-    tabela_view = tabela_view.rename(columns={
-        "CLUSTER_ANALITICO": "CLUSTER",
-        "CIDADE_SUB_CLUSTER": "SUBCLUSTER",
-        "HP_TOTAL": "HP",
-        "PC_CLASSE_AB1": "% CLASSE AB1"
-    })
+    else:
 
-    st.dataframe(
-        tabela_view,
-        use_container_width=True
-    )
+        tabela_view = tabela_bairros.copy()
 
-# ---------------- ABA 3 ---------------- #
+        tabela_view["PC_CLASSE_AB1"] = (
+            tabela_view["PC_CLASSE_AB1"] * 100
+        ).round(1).astype(str) + "%"
+
+        tabela_view = tabela_view.rename(columns={
+            "CLUSTER_ANALITICO": "CLUSTER",
+            "CIDADE_SUB_CLUSTER": "SUBCLUSTER",
+            "HP_TOTAL": "HP",
+            "PC_CLASSE_AB1": "% CLASSE AB1"
+        })
+
+        st.dataframe(
+            tabela_view,
+            use_container_width=True
+        )
+
+# ---------------------------------------------------
+# ÁREAS 100%
+# ---------------------------------------------------
 
 with tab3:
 
@@ -318,10 +321,15 @@ with tab3:
         .reset_index()
     )
 
-    areas_100_long.columns = ["AREA_TECNICA",
-                              "CLUSTER_GEOGRAFICO", "PERCENTUAL"]
+    areas_100_long.columns = [
+        "AREA_TECNICA",
+        "CLUSTER_GEOGRAFICO",
+        "PERCENTUAL"
+    ]
 
-    areas_100_long = areas_100_long[areas_100_long["PERCENTUAL"] == 100]
+    areas_100_long = areas_100_long[
+        areas_100_long["PERCENTUAL"] == 100
+    ]
 
     hp_total_area = matriz.sum(axis=1)
 
@@ -337,12 +345,13 @@ with tab3:
     )
 
     st.dataframe(
-        areas_100_long.reset_index(drop=True),
+        areas_100_long,
         use_container_width=True
     )
 
-
-# ---------------- ABA 4 ---------------- #
+# ---------------------------------------------------
+# ANÁLISE POR CLUSTER
+# ---------------------------------------------------
 
 with tab4:
 
@@ -355,11 +364,10 @@ with tab4:
     )
 
     cols_per_row = 3
-    clusters_lista = clusters_selecionados
 
-    for row_start in range(0, len(clusters_lista), cols_per_row):
+    for row_start in range(0, len(clusters_selecionados), cols_per_row):
 
-        row_clusters = clusters_lista[row_start:row_start + cols_per_row]
+        row_clusters = clusters_selecionados[row_start:row_start + cols_per_row]
         cols = st.columns(cols_per_row)
 
         for col, cluster in zip(cols, row_clusters):
@@ -387,14 +395,9 @@ with tab4:
             fig.update_layout(
                 height=360,
                 template="plotly_white",
-                xaxis_title="Área Técnica",
-                yaxis_title=None,
                 yaxis=dict(range=[0, 100]),
                 xaxis_tickangle=-60,
                 showlegend=False
             )
 
-            col.plotly_chart(
-                fig,
-                use_container_width=True
-            )
+            col.plotly_chart(fig, use_container_width=True)
