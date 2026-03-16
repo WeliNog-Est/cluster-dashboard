@@ -44,19 +44,24 @@ def normalize_ascii(x):
     x = "".join(ch for ch in x if unicodedata.category(ch) != "Mn")
     return x.upper().strip()
 
-
 def cluster_sp_area(row):
 
     cg = str(row.get("CLUSTER_GEOGRAFICO", "")).strip().upper()
 
     if cg == "SP":
 
-        area = str(row.get("AREA", "")).strip().upper()
+        area = str(row.get("AREA", ""))
+
+        # remover acentos
+        area = unicodedata.normalize("NFD", area)
+        area = "".join(ch for ch in area if unicodedata.category(ch) != "Mn")
+
+        area = area.upper().strip()
 
         if area == "" or area == "#N/D":
             return "SP (N/D)"
 
-        if "AREA 1" in area:
+        elif "AREA 1" in area:
             return "SP (AREA 1)"
 
         elif "AREA 2" in area:
