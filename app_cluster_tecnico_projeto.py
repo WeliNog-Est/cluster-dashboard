@@ -209,6 +209,8 @@ with tab2:
 
     df_aux = df.copy()
 
+    # ---------------- MATRIZ GERAL ---------------- #
+
     matriz_geo = df_aux.pivot_table(
         index="AREA_TECNICA",
         columns="CLUSTER_GEOGRAFICO",
@@ -217,17 +219,25 @@ with tab2:
         fill_value=0
     )
 
-    matriz_geo_pct = (matriz_geo.div(
-        matriz_geo.sum(axis=1), axis=0) * 100).fillna(0)
+    matriz_geo_pct = (
+        matriz_geo.div(matriz_geo.sum(axis=1), axis=0) * 100
+    ).fillna(0)
+
+    # ---------------- ÁREAS NÃO INTEGRAIS EM SP ---------------- #
 
     areas_nao_integrais_em_SP = matriz_geo_pct.index[
-        (matriz_geo_pct["SP"] > 0) & (matriz_geo_pct["SP"] < 100)
+        (matriz_geo_pct["SP"] > 0) &
+        (matriz_geo_pct["SP"] < 100)
     ]
+
+    # ---------------- FILTRAR APENAS SP ---------------- #
 
     df_sp = df_aux.loc[
         df_aux["AREA_TECNICA"].isin(areas_nao_integrais_em_SP) &
         (df_aux["CLUSTER_GEOGRAFICO"] == "SP")
     ].copy()
+
+    # ---------------- MATRIZ ANALÍTICA ---------------- #
 
     matriz_sp_analitico = df_sp.pivot_table(
         index="AREA_TECNICA",
@@ -238,8 +248,13 @@ with tab2:
     )
 
     matriz_sp_analitico_pct = (
-        matriz_sp_analitico.div(matriz_sp_analitico.sum(axis=1), axis=0) * 100
+        matriz_sp_analitico.div(
+            matriz_sp_analitico.sum(axis=1),
+            axis=0
+        ) * 100
     ).fillna(0).round(1)
+
+    # ---------------- FORMATAR PARA HEATMAP ---------------- #
 
     df_heat_sp = (
         matriz_sp_analitico_pct
@@ -261,9 +276,15 @@ with tab2:
         template="plotly_white"
     )
 
-    fig_sp.update_layout(height=500)
+    fig_sp.update_layout(
+        height=500,
+        paper_bgcolor="white",
+        plot_bgcolor="white"
+    )
 
     st.plotly_chart(fig_sp, use_container_width=True)
+
+    # ---------------- TABELA AREA 14 ---------------- #
 
     st.markdown("### Subclusters da Área 14 e % de Classe AB1")
 
@@ -284,7 +305,6 @@ with tab2:
         tabela_view,
         use_container_width=True
     )
-
 
 # ---------------- ABA 3 ---------------- #
 
