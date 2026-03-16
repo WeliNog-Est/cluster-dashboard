@@ -52,35 +52,35 @@ def normalize_ascii(x: str) -> str:
 
 def cluster_sp_area(row):
 
-    cg = strip_upper(row.get("CLUSTER_GEOGRAFICO", ""))
+    cg = str(row.get("CLUSTER_GEOGRAFICO", "")).strip().upper()
 
     if cg == "SP":
 
-        area_raw = row.get("AREA", None)
+        area = str(row.get("AREA", "")).strip().upper()
 
-        if pd.isna(area_raw) or str(area_raw).strip() == "" or str(area_raw).strip().upper() == "#N/D":
+        if area == "" or area == "#N/D":
             return "SP (N/D)"
 
-        area_norm = normalize_ascii(area_raw)
-
-        if "AREA 1" in area_norm:
+        if "AREA 1" in area:
             return "SP (AREA 1)"
-        elif "AREA 2" in area_norm:
+
+        elif "AREA 2" in area:
             return "SP (AREA 2)"
-        elif "AREA 3" in area_norm:
+
+        elif "AREA 3" in area:
             return "SP (AREA 3)"
+
         else:
             return "SP (OUTRA)"
 
-    else:
-        return cg
+    return cg
 
 
 # ---------------- CARREGAR OS DADOS ---------------- #
 
 @st.cache_data
 def carregar_dados():
-
+    
     df = pd.read_csv(
         "clusterizacao_streamlit.csv",
         sep=";",
