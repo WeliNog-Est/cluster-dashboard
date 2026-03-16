@@ -546,6 +546,3 @@ with tab5:
         tabela_abs,
         use_container_width=True
     )
-
-
-
