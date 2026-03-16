@@ -56,7 +56,7 @@ def carregar_dados():
     df["COD_NODE_NORM"] = df["COD_NODE_TRAT"].apply(normalizar_node)
 
     # Base técnica
-    df_tec = pd.read_excel("data/Base_Qualinet.xlsx", sheet_name="Planilha1")
+    df_tec = pd.read_excel("data/base_qualinet.xlsx", sheet_name="Planilha1")
     df_tec.columns = df_tec.columns.str.strip().str.upper()
     df_tec.rename(columns={"HPS": "HP"}, inplace=True)
     df_tec = df_tec[["NODE", "CIDADE", "AREA", "HP"]]
